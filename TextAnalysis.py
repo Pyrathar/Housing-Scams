@@ -1,71 +1,112 @@
-from postal.parser import parse_address
-import re
-from bs4 import BeautifulSoup
-import urllib2
-from cookielib import CookieJar
-import urllib, json, time
+from difflib import SequenceMatcher
+import re, math
+from collections import Counter
+import Replacer
+
+result=[]
+match=0
+samplearray=[]
+
+WORD = re.compile(r'\w+')
+
+def wiredtransfers(file):
+
+  words = file.split()
+  limit = len(words)-5
 
 
-#EMAIL ANALYSIS
+  for index, value in enumerate(words):
+     if index<limit:
+          word1=words[index]
+          word2=words[index+1]
 
-def getemail(text):
-    match = re.search(r'[\w\.-]+@[\w\.-]+', text)
-    if match is not None:
-      email=str(match.group(0))
-      return email
+          with open("wiredtransfers.txt") as f:
+                content = f.readlines()
+                content = [x.strip() and x.split() for x in content]
 
-def emailsearch(email):
+                for index, wired in enumerate(content):
 
-  cj = CookieJar()
-  opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-  opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17')]
+                    if wired[0] == word1 and wired[1] == "null":
 
-  path = "http://scammed.by/indexfrom.php?email=" + email
-  sourceCode = opener.open(path).read()
-  soup = BeautifulSoup(sourceCode,"lxml")
+                          return word1
 
 
-  letters = soup.find_all("div",class_="previewsubject")
-  print "Letters"
-  print letters
-  if letters!=[]:
-   returnstatement = "http://scammed.by/" + letters[0].a["href"]
-   return returnstatement
-  else:
-   returnstatement ="Not found email is clean"
-   return returnstatement
+                    if wired[0]==word1 and wired[1]==word2:
+                          return  word1,word2
 
-#ADDRESS ANALYSIS
+def identification(file):
 
-def getaddress(text):
- match = re.search(r'\A(.*?)\s+(\d+[a-zA-Z]{0,1}\s{0,1}[-]{1}\s{0,1}\d*[a-zA-Z]{0,1}|\d+[a-zA-Z-]{0,1}\d*[a-zA-Z]{0,1})', text)
- print match
- address=parse_address(text)
+  words = file.split()
+  types= ["passport","Passport","id","ID"]
 
- for i in range(len(address)):
+  for i in words:
+     for j in types:
+         if i==j:
+             print i
+             return i
 
-     if address[i][1]=="road":
-        print "Road " + address[i][0]
-        UserAddress = address[i][0]
-        UserAddress.ljust(2)
-     if address[i][1]=="house_number":
-         if (address[i][0]).isdigit():
-             print "House number" + address[i][0]
-             UserAddress = UserAddress + " " +address[i][0]
 
- return UserAddress
 
-def AddressGeo(address,api="",delay=5):
-  base = r"https://maps.googleapis.com/maps/api/geocode/json?"
-  addP = "address=" + address.replace(" ","+")
-  GeoUrl = base + addP + "&AIzaSyBhmi4lwBEOzMD9bPNC3ZEnTgy6UAO5ik8=" + api
-  response = urllib.urlopen(GeoUrl)
-  jsonRaw = response.read()
-  jsonData = json.loads(jsonRaw)
-  if jsonData['status'] == 'OK':
-    resu = jsonData['results'][0]
-    finList = [resu['formatted_address'],resu['geometry']['location']['lat'],resu['geometry']['location']['lng']]
-  else:
-    finList = [None,None,None]
-  time.sleep(delay) #in seconds
-  return finList
+def get_cosine(vec1, vec2):
+     intersection = set(vec1.keys()) & set(vec2.keys())
+     numerator = sum([vec1[x] * vec2[x] for x in intersection])
+
+     sum1 = sum([vec1[x]**2 for x in vec1.keys()])
+     sum2 = sum([vec2[x]**2 for x in vec2.keys()])
+     denominator = math.sqrt(sum1) * math.sqrt(sum2)
+
+     if not denominator:
+        return 0.0
+     else:
+        return float(numerator) / denominator
+
+def text_to_vector(text):
+     words = WORD.findall(text)
+     return Counter(words)
+
+def comparebyarray(array):
+
+    with open("Lies.txt") as f:
+        content = f.readlines()
+        content = [x.strip() and x.split() for x in content]
+        Replacer.wordreplacer(content)
+
+        #Lies array
+        for j in content:
+          str1 = ' '.join(array)
+          str2 = ' '.join(j)
+
+          vector1 = text_to_vector(str1)
+          vector2 = text_to_vector(str2)
+
+
+          cosine = get_cosine(vector1, vector2)
+
+          matcher = SequenceMatcher(None, str1,str2).ratio()
+
+
+
+
+          if matcher>=0.80 or cosine >= 0.80:
+              print str1
+
+
+
+
+def expressionhunt(file):
+    words = file.split()
+    limit = len(words)
+    samplearray=[]
+
+    for index, value in enumerate(words):
+         if index<=(limit-6):
+            for i in range(6):
+
+              word = words[index+i]
+              samplearray.append(word)
+
+
+              if i==5:
+
+                comparebyarray(samplearray)
+                samplearray=[]

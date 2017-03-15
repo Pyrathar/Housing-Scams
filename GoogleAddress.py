@@ -7,7 +7,7 @@ import urllib, json, time
 def GoogGeoAPI(address,api="",delay=5):
   base = r"https://maps.googleapis.com/maps/api/geocode/json?"
   addP = "address=" + address.replace(" ","+")
-  GeoUrl = base + addP + "&AIzaSyBhmi4lwBEOzMD9bPNC3ZEnTgy6UAO5ik8=" + api
+  GeoUrl = base + addP + "&GOOGLEKEYHERE=" + api
   response = urllib.urlopen(GeoUrl)
   jsonRaw = response.read()
   jsonData = json.loads(jsonRaw)
